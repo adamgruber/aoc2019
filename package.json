@@ -1,0 +1,17 @@
+{
+  "name": "aoc2019",
+  "version": "1.0.0",
+  "description": "Advent of Code 2019",
+  "dependencies": {},
+  "devDependencies": {
+    "chalk": "^3.0.0",
+    "jest": "^24.9.0"
+  },
+  "scripts": {
+    "start": "node aoc2019.js",
+    "test": "jest",
+    "tdd": "jest --watchAll"
+  },
+  "author": "Adam Gruber",
+  "license": "ISC"
+}
