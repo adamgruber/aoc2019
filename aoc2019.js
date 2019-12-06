@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const { MODULES } = require('./constants');
-const { getTotalFuelForModule } = require('./1');
+const { getTotalFuelForModule } = require('./day1');
 
 const log = console.log;
 
@@ -16,7 +16,7 @@ const totalFuelForTrip = getTotalFuelForTrip(MODULES);
 
 log(chalk`
     {bgGreen {black Advent of Code 2019}}
-    
+
     {yellow Day 1:}
     Total Fuel Requirements: ${totalFuelForTrip}
 `);
