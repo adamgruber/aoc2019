@@ -1,41 +1,50 @@
-function runIntcode(program) {
-    const opcodes = {
+const INSTRUCTION_LENGTH = 4;
+
+function runIntcode(memory) {
+    const instructions = {
         ADD: 1,
         MULTIPLY: 2,
         STOP: 99,
     };
-    let currentPosition = 0;
-    let opcode = program[currentPosition];
+    let pointer = 0;
+    let instruction = memory[pointer];
 
-    const getPositions = () => [
-        program[currentPosition + 1],
-        program[currentPosition + 2],
-        program[currentPosition + 3],
-    ];
+    const getParams = () => {
+        const args = Array(INSTRUCTION_LENGTH - 1)
+            .fill(0)
+            .map((_, i) => memory[pointer + i + 1]);
 
-    while (opcode !== undefined && opcode !== opcodes.STOP) {
-        const [inputAPos, inputBPos, outputPos] = getPositions();
-        const inputA = program[inputAPos];
-        const inputB = program[inputBPos];
+        console.log(args.pop(1));
 
-        switch (program[currentPosition]) {
-            case opcodes.ADD:
-                program[outputPos] = inputA + inputB;
+        return {
+            inputs: args.slice(-1).map(addr => memory[addr]),
+            outputAddress: args[INSTRUCTION_LENGTH - 1],
+        };
+    };
+
+    while (instruction !== undefined && instruction !== instructions.STOP) {
+        // const [inputAPos, inputBPos, outputPos] = getParams();
+        const { inputs, outputAddress } = getParams();
+        console.log(inputs);
+
+        switch (memory[pointer]) {
+            case instructions.ADD:
+                memory[outputAddress] = inputs[0] + inputs[1];
                 break;
 
-            case opcodes.MULTIPLY:
-                program[outputPos] = inputA * inputB;
+            case instructions.MULTIPLY:
+                memory[outputAddress] = inputs[0] * inputs[1];
                 break;
 
             default:
             // Unexpected
         }
 
-        currentPosition += 4;
-        opcode = program[currentPosition];
+        pointer += INSTRUCTION_LENGTH;
+        instruction = memory[pointer];
     }
 
-    return program;
+    return memory;
 }
 
 module.exports = { runIntcode };
