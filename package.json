@@ -13,5 +13,10 @@
     "tdd": "jest --watchAll"
   },
   "author": "Adam Gruber",
-  "license": "ISC"
+  "license": "ISC",
+  "prettier": {
+      "tabWidth": 4,
+      "trailingComma": "es5",
+      "singleQuote": true
+  }
 }

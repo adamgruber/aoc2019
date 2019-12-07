@@ -24,4 +24,12 @@ function getTotalFuelForModule(module) {
     return totalFuel;
 }
 
-module.exports = { getFuelForModule, getTotalFuelForModule };
+// Day 1: Total fuel requirements
+function run(modules) {
+    return modules.reduce(
+        (acc, module) => (acc += getTotalFuelForModule(module)),
+        0
+    );
+}
+
+module.exports = { getFuelForModule, getTotalFuelForModule, run };

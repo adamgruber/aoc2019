@@ -14,18 +14,16 @@ function runIntcode(memory) {
             .fill(0)
             .map((_, i) => memory[pointer + i + 1]);
 
-        console.log(args.pop(1));
+        const outputAddress = args.pop();
 
         return {
-            inputs: args.slice(-1).map(addr => memory[addr]),
-            outputAddress: args[INSTRUCTION_LENGTH - 1],
+            inputs: args.map(addr => memory[addr]),
+            outputAddress,
         };
     };
 
     while (instruction !== undefined && instruction !== instructions.STOP) {
-        // const [inputAPos, inputBPos, outputPos] = getParams();
         const { inputs, outputAddress } = getParams();
-        console.log(inputs);
 
         switch (memory[pointer]) {
             case instructions.ADD:
@@ -47,4 +45,34 @@ function runIntcode(memory) {
     return memory;
 }
 
-module.exports = { runIntcode };
+// Day 2
+function fixGravityAssist(initialMemory, noun, verb) {
+    const memory = [...initialMemory];
+    memory[1] = noun;
+    memory[2] = verb;
+
+    return runIntcode(memory)[0];
+}
+
+// Day 2.2
+function run(initialMemory) {
+    let noun;
+    let verb;
+    for (let n = 0; n < 100; n += 1) {
+        for (let v = 0; v < 100; v += 1) {
+            if (fixGravityAssist(initialMemory, n, v) === 19690720) {
+                noun = n;
+                verb = v;
+                break;
+            }
+        }
+    }
+
+    return 100 * noun + verb;
+}
+
+module.exports = {
+    runIntcode,
+    run,
+    test: initialMemory => fixGravityAssist(initialMemory, 12, 2),
+};
