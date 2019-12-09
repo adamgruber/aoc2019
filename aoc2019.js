@@ -2,6 +2,8 @@ const chalk = require('chalk');
 const { MODULES, INTCODE } = require('./constants');
 const day1 = require('./day1');
 const day2 = require('./day2');
+const day3 = require('./day3');
+const inputDay3 = require('./day3/input');
 
 console.log(chalk`
     {bgGreen {black Advent of Code 2019}}
@@ -12,5 +14,13 @@ console.log(chalk`
     {yellow Day 2:}
     Part 1: ${day2.test(INTCODE)}
     Part 2: ${day2.run(INTCODE)}
+
+    {yellow Day 3:}
+    Part 1 - Manhattan Distance: ${
+        day3.test(inputDay3.red, inputDay3.blue).distance
+    }
+    Part 2 - Fewest Steps to Intersection: ${
+        day3.test(inputDay3.red, inputDay3.blue).steps
+    }
 
 `);
