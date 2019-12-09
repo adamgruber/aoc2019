@@ -29,10 +29,14 @@ function isSamePlane(start, end, val) {
 }
 
 function isBetween(start, end, val) {
-    return start > val && val < end;
+    return (start < val && val < end) || (start > val && val > end);
 }
 
 function pointIsOnSegment(aX, aY, bX, bY, x, y) {
+    if (isSamePlane(aX, bX, x)) {
+    }
+    if (isSamePlane(aY, bY, y)) {
+    }
     return (
         (isSamePlane(aX, bX, x) && isBetween(aY, bY, y)) ||
         (isSamePlane(aY, bY, y) && isBetween(aX, bX, x))
@@ -49,16 +53,14 @@ function getStepsToPoint(pathPoints, endPoint) {
         const bX = path[i + 1].x;
         const bY = path[i + 1].y;
 
-        console.log(aX, aY, bX, bY, x, y);
         let addSteps;
 
         if (pointIsOnSegment(aX, aY, bX, bY, x, y)) {
             if (aX === bX) {
-                addSteps = Math.abs(bY - y);
+                addSteps = Math.abs(aY - y);
             } else {
-                addSteps = Math.abs(bX - x);
+                addSteps = Math.abs(aX - x);
             }
-            console.log('add ', addSteps);
             steps += addSteps;
             break;
         } else {
@@ -67,10 +69,8 @@ function getStepsToPoint(pathPoints, endPoint) {
             } else {
                 addSteps = Math.abs(bX - aX);
             }
-            console.log('add ', addSteps);
             steps += addSteps;
         }
-        console.log('total', steps);
     }
     return steps;
 }
@@ -201,11 +201,10 @@ function test(red, blue) {
 
     // Calculate steps to each intersection for each wire
     const steps = intersections.map(
-        intersection => getStepsToPoint(redPoints, intersection)
-        // getStepsToPoint(bluePoints, intersection)
+        intersection =>
+            getStepsToPoint(redPoints, intersection) +
+            getStepsToPoint(bluePoints, intersection)
     );
-
-    console.log(steps);
 
     return { distance: closest.x + closest.y, steps: Math.min(...steps) };
 }
