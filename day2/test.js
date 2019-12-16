@@ -1,4 +1,4 @@
-const { runIntcode } = require('./index');
+const IntcodeComputer = require('../utils/IntcodeComputer');
 
 const testIntcodes = [
     { program: [1, 0, 0, 0, 99], output: [2, 0, 0, 0, 99] },
@@ -10,10 +10,18 @@ const testIntcodes = [
     },
 ];
 
+const setup = program => new IntcodeComputer(program);
+
 describe('getFuelForModule', () => {
     testIntcodes.forEach(({ program, output }) => {
         it('should return expected output', () => {
-            expect(runIntcode(program)).toEqual(output);
+            const computer = setup(program);
+            computer
+                .run()
+                .then(final => {
+                    expect(final).toEqual(output);
+                })
+                .catch(err => console.log(err));
         });
     });
 });
