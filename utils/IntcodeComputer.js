@@ -27,11 +27,17 @@ class IntcodeComputer {
         this.opcode = null;
         this.pointerModified = false;
         this.stopped = false;
+        this.outputValues = [];
 
         this.options = {
             debug: false,
+            inputs: [],
+            quiet: false,
+            done() {},
             ...opts,
         };
+
+        this.inputs = this.options.inputs;
 
         this.nextInstruction();
     }
@@ -88,7 +94,7 @@ class IntcodeComputer {
         this.memory[address] = value;
     }
 
-    async getInput() {
+    async askForInput() {
         try {
             const input = await askQuestion('Input: ', response => {
                 if (!/^\d+$/.test(response)) {
@@ -96,11 +102,28 @@ class IntcodeComputer {
                 }
                 return parseInt(response, 10);
             });
-            const address = this.memory[this.pointer + 1];
-            this.memory[address] = input;
         } catch (err) {
             log(err.message);
         }
+    }
+
+    async getInput() {
+        let input;
+        if (!this.inputs.length) {
+            try {
+                input = await this.askForInput();
+            } catch (err) {
+                log(err.message);
+            }
+        } else {
+            input = this.inputs.shift();
+        }
+
+        const address = this.memory[this.pointer + 1];
+        this.debug(
+            chalk`Setting input {bold ${input}} at address {bold ${address}}`
+        );
+        this.memory[address] = input;
     }
 
     add() {
@@ -114,7 +137,11 @@ class IntcodeComputer {
     }
 
     output() {
-        log(this.params[0]);
+        const value = this.params[0];
+        this.outputValues.push(value);
+        if (!this.options.quiet) {
+            log(chalk`Output: {bold ${value}}`);
+        }
     }
 
     jumpIfTrue() {
@@ -149,7 +176,11 @@ class IntcodeComputer {
 
     async run() {
         while (this.instruction !== undefined && !this.stopped) {
-            this.debug(this.instruction, this.opcode.type, this.params);
+            this.debug(chalk`
+                Instruction: {bold ${this.instruction}}
+                Opcode type: {bold ${this.opcode.type}}
+                Params: {bold ${this.params}}
+            `);
 
             switch (this.opcode.type) {
                 case 'ADD':
@@ -190,9 +221,7 @@ class IntcodeComputer {
 
                 default:
                     log(
-                        chalk`{red Unexpected opcode: {bold ${
-                            this.instruction
-                        }}}`
+                        chalk`{red Unexpected opcode: {bold ${this.instruction}}}`
                     );
             }
 
@@ -206,6 +235,12 @@ class IntcodeComputer {
     }
 
     done() {
+        if (this.options.done) {
+            this.options.done({
+                outputValues: this.outputValues,
+                memory: this.memory,
+            });
+        }
         this.debug('Finished');
     }
 }
