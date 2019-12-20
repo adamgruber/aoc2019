@@ -1,57 +1,8 @@
+const { permuteArray, parseIntcode } = require('../utils');
 const IntcodeComputer = require('../utils/IntcodeComputer');
-
-function getPermutationsString(values) {
-    const valuesString = values;
-    const permutations = [];
-
-    if (valuesString.length === 1) {
-        permutations.push(valuesString);
-        return permutations;
-    }
-
-    for (let i = 0; i < valuesString.length; i += 1) {
-        const firstVal = valuesString[i];
-        const rest =
-            valuesString.substring(0, i) + valuesString.substring(i + 1);
-        const innerPermutations = getPermutationsString(rest);
-        for (let j = 0; j < innerPermutations.length; j += 1) {
-            permutations.push(firstVal + innerPermutations[j]);
-        }
-    }
-
-    return permutations;
-}
-
-function getPermutations(arr) {
-    const results = [];
-    const used = [];
-
-    function permute(inputArray) {
-        for (let i = 0; i < inputArray.length; i++) {
-            // Grab single element from array
-            const element = inputArray.splice(i, 1)[0];
-
-            // Add element to list of used elements
-            used.push(element);
-
-            if (inputArray.length === 0) {
-                results.push(used.slice());
-            }
-
-            permute(inputArray);
-            inputArray.splice(i, 0, element);
-
-            used.pop();
-        }
-        return results;
-    }
-
-    return permute(arr);
-}
 
 const NUM_AMPLIFIERS = 5;
 const setup = (...args) => new IntcodeComputer(...args);
-const parseProgram = raw => raw.split(',').map(parseFloat);
 
 function runSequence(sequence, program, options = {}) {
     let nextInput = 0;
@@ -104,14 +55,14 @@ function runSequenceLoop(sequence, program, options = {}) {
 }
 
 function findMaxSignal(input, phaseSettings, options = {}) {
-    const sequences = getPermutations(phaseSettings);
+    const sequences = permuteArray(phaseSettings);
     const signals = [];
 
     for (let i = 0; i < sequences.length; i += 1) {
         const sequence = sequences[i];
         const signal = options.loop
-            ? runSequenceLoop(sequence, parseProgram(input))
-            : runSequence(sequence, parseProgram(input), {
+            ? runSequenceLoop(sequence, parseIntcode(input))
+            : runSequence(sequence, parseIntcode(input), {
                   quiet: true,
               });
 
@@ -122,7 +73,5 @@ function findMaxSignal(input, phaseSettings, options = {}) {
 }
 
 module.exports = {
-    getPermutationsString,
-    getPermutations,
     findMaxSignal,
 };

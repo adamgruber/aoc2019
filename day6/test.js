@@ -1,10 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+const { getInput } = require('../utils');
 const { countOrbits, getMinimumTransfers } = require('./index');
 
-const puzzleInput = fs.readFileSync(path.join(__dirname, 'input.txt'), {
-    encoding: 'utf8',
-});
+const puzzleInput = getInput(6);
 
 const testInputA = `
 COM)B

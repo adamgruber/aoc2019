@@ -1,15 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const { getInput } = require('../utils');
 const IntcodeComputer = require('../utils/IntcodeComputer');
-const {
-    getPermutationsString,
-    getPermutations,
-    findMaxSignal,
-} = require('./index');
+const { findMaxSignal } = require('./index');
 
-const rawPuzzleInput = fs.readFileSync(path.join(__dirname, 'input.txt'), {
-    encoding: 'utf8',
-});
+const rawPuzzleInput = getInput(7);
 
 const testCases = [
     {
@@ -73,23 +66,5 @@ describe('Amplification Circuit', () => {
             loop: true,
         });
         expect(maxSignal).toEqual(5406484);
-    });
-});
-
-describe('permutations', () => {
-    let values = [0, 1, 2];
-    // describe('when values is a string', () => {
-    //     expect(getPermutationsString(values.join(''))).toEqual();
-    // });
-
-    describe('when values is an array', () => {
-        expect(getPermutations(values)).toEqual([
-            [0, 1, 2],
-            [0, 2, 1],
-            [1, 0, 2],
-            [1, 2, 0],
-            [2, 0, 1],
-            [2, 1, 0],
-        ]);
     });
 });

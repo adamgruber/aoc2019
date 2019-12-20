@@ -1,17 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+const { getInput, parseIntcode } = require('../utils');
 const IntcodeComputer = require('../utils/IntcodeComputer');
 
-const rawPuzzleInput = fs.readFileSync(path.join(__dirname, 'input.txt'), {
-    encoding: 'utf8',
-});
-
-const parseProgram = raw => raw.split(',').map(parseFloat);
+const rawPuzzleInput = getInput(5);
 
 describe('Asteroids', () => {
     let computer;
     beforeEach(() => {
-        computer = new IntcodeComputer(parseProgram(rawPuzzleInput));
+        computer = new IntcodeComputer(parseIntcode(rawPuzzleInput));
     });
 
     it('should output expected diagnostic code for input 1', () => {
