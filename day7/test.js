@@ -11,13 +11,6 @@ const rawPuzzleInput = fs.readFileSync(path.join(__dirname, 'input.txt'), {
     encoding: 'utf8',
 });
 
-const NUM_AMPLIFIERS = 5;
-
-const parseProgram = raw => raw.split(',').map(parseFloat);
-
-const setup = (program, opts) => new IntcodeComputer(program, opts);
-
-// const phaseSettings = [[3, 1, 2, 4, 0]];
 const testCases = [
     {
         rawProgram: '3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0',
@@ -38,29 +31,48 @@ const testCases = [
     },
 ];
 
-describe('Amplification Circuit', () => {
-    const runProgram = computer => computer.run();
+const loopTests = [
+    {
+        rawProgram:
+            '3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5',
+        maxThrusterSignal: 139629729,
+        sequence: [9, 8, 7, 6, 5],
+    },
+    {
+        rawProgram:
+            '3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10',
+        maxThrusterSignal: 18216,
+        sequence: [9, 8, 7, 6, 5],
+    },
+];
 
+describe('Amplification Circuit', () => {
     testCases.forEach(({ rawProgram, sequence, maxThrusterSignal }) => {
-        it('should calculate max thruster signal', async () => {
-            let nextInput = 0;
-            for (let i = 0; i < NUM_AMPLIFIERS; i += 1) {
-                const computer = setup(parseProgram(rawProgram), {
-                    quiet: true,
-                    inputs: [sequence[i], nextInput],
-                    done({ outputValues }) {
-                        nextInput = outputValues.pop();
-                    },
-                });
-                await runProgram(computer);
-            }
-            expect(nextInput).toEqual(maxThrusterSignal);
+        it('should calculate max thruster signal', () => {
+            const maxSignal = findMaxSignal(rawProgram, [0, 1, 2, 3, 4]);
+            expect(maxSignal).toEqual(maxThrusterSignal);
         });
     });
 
-    it('should calculate max thruster signal for puzzle input', async () => {
-        const maxSignal = await findMaxSignal(rawPuzzleInput);
+    it('should calculate max thruster signal for puzzle input', () => {
+        const maxSignal = findMaxSignal(rawPuzzleInput, [0, 1, 2, 3, 4]);
         expect(maxSignal).toEqual(45730);
+    });
+
+    loopTests.forEach(({ rawProgram, sequence, maxThrusterSignal }) => {
+        it('should calculate max thruster signal', () => {
+            const maxSignal = findMaxSignal(rawProgram, [5, 6, 7, 8, 9], {
+                loop: true,
+            });
+            expect(maxSignal).toEqual(maxThrusterSignal);
+        });
+    });
+
+    it('should calculate max thruster signal for puzzle input part 2', () => {
+        const maxSignal = findMaxSignal(rawPuzzleInput, [5, 6, 7, 8, 9], {
+            loop: true,
+        });
+        expect(maxSignal).toEqual(5406484);
     });
 });
 

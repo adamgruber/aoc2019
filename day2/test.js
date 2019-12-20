@@ -16,12 +16,8 @@ describe('getFuelForModule', () => {
     testIntcodes.forEach(({ program, output }) => {
         it('should return expected output', () => {
             const computer = setup(program);
-            computer
-                .run()
-                .then(final => {
-                    expect(final).toEqual(output);
-                })
-                .catch(err => console.log(err));
+            computer.run();
+            expect(computer.getMemory()).toEqual(output);
         });
     });
 });

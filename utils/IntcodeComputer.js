@@ -1,38 +1,40 @@
 const chalk = require('chalk');
 const log = console.log;
 
-const askQuestion = (question, transform = x => x) => {
-    const readline = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-    return new Promise((resolve, reject) => {
-        readline.question(question, response => {
-            readline.close();
-            let transformed;
-            try {
-                transformed = transform(response);
-            } catch (err) {
-                reject(err);
-            }
-            resolve(transformed);
-        });
-    });
-};
+// const askQuestion = (question, transform = x => x) => {
+//     const readline = require('readline').createInterface({
+//         input: process.stdin,
+//         output: process.stdout,
+//     });
+//     return new Promise((resolve, reject) => {
+//         readline.question(question, response => {
+//             readline.close();
+//             let transformed;
+//             try {
+//                 transformed = transform(response);
+//             } catch (err) {
+//                 reject(err);
+//             }
+//             resolve(transformed);
+//         });
+//     });
+// };
+
+const DEBUG_LEVELS = ['none', 'info', 'verbose'];
 
 class IntcodeComputer {
     constructor(program, opts = {}) {
-        this.memory = program;
+        this.memory = [...program];
         this.pointer = 0;
         this.opcode = null;
         this.pointerModified = false;
         this.stopped = false;
+        this.waiting = false;
         this.outputValues = [];
 
         this.options = {
-            debug: false,
+            debugLevel: 'none',
             inputs: [],
-            quiet: false,
             done() {},
             ...opts,
         };
@@ -42,8 +44,14 @@ class IntcodeComputer {
         this.nextInstruction();
     }
 
+    info(msg) {
+        if (this.options.debugLevel !== 'none') {
+            log(msg);
+        }
+    }
+
     debug(msg) {
-        if (this.options.debug) {
+        if (this.options.debugLevel === 'verbose') {
             log(msg);
         }
     }
@@ -94,37 +102,53 @@ class IntcodeComputer {
         this.memory[address] = value;
     }
 
-    async askForInput() {
-        try {
-            const input = await askQuestion('Input: ', response => {
-                if (!/^\d+$/.test(response)) {
-                    throw new Error('Input must be an integer');
-                }
-                return parseInt(response, 10);
-            });
-        } catch (err) {
-            log(err.message);
-        }
-    }
-
-    async getInput() {
-        let input;
+    setInput() {
         if (!this.inputs.length) {
-            try {
-                input = await this.askForInput();
-            } catch (err) {
-                log(err.message);
-            }
-        } else {
-            input = this.inputs.shift();
+            this.info(chalk`{yellow WARNING: No inputs founds}`);
+            this.waiting = true;
+            return;
         }
 
+        const input = this.inputs.shift();
         const address = this.memory[this.pointer + 1];
         this.debug(
             chalk`Setting input {bold ${input}} at address {bold ${address}}`
         );
         this.memory[address] = input;
+        this.waiting = false;
     }
+
+    // async askForInput() {
+    //     try {
+    //         const input = await askQuestion('Input: ', response => {
+    //             if (!/^\d+$/.test(response)) {
+    //                 throw new Error('Input must be an integer');
+    //             }
+    //             return parseInt(response, 10);
+    //         });
+    //     } catch (err) {
+    //         log(err.message);
+    //     }
+    // }
+
+    // async getInput() {
+    //     let input;
+    //     if (!this.inputs.length) {
+    //         try {
+    //             input = await this.askForInput();
+    //         } catch (err) {
+    //             log(err.message);
+    //         }
+    //     } else {
+    //         input = this.inputs.shift();
+    //     }
+
+    //     const address = this.memory[this.pointer + 1];
+    //     this.debug(
+    //         chalk`Setting input {bold ${input}} at address {bold ${address}}`
+    //     );
+    //     this.memory[address] = input;
+    // }
 
     add() {
         const address = this.memory[this.pointer + 3];
@@ -139,9 +163,7 @@ class IntcodeComputer {
     output() {
         const value = this.params[0];
         this.outputValues.push(value);
-        if (!this.options.quiet) {
-            log(chalk`Output: {bold ${value}}`);
-        }
+        this.info(chalk`Output: {bold ${value}}`);
     }
 
     jumpIfTrue() {
@@ -174,7 +196,9 @@ class IntcodeComputer {
         this.setParams();
     }
 
-    async run() {
+    run(inputs = []) {
+        this.inputs = inputs;
+
         while (this.instruction !== undefined && !this.stopped) {
             this.debug(chalk`
                 Instruction: {bold ${this.instruction}}
@@ -192,7 +216,7 @@ class IntcodeComputer {
                     break;
 
                 case 'INPUT':
-                    await this.getInput();
+                    this.setInput();
                     break;
 
                 case 'OUTPUT':
@@ -225,13 +249,33 @@ class IntcodeComputer {
                     );
             }
 
+            if (this.waiting) {
+                return;
+            }
+
             this.setPointer();
             this.nextInstruction();
         }
 
         this.done();
+    }
 
-        return Promise.resolve(this.memory);
+    getMemory() {
+        return this.memory;
+    }
+
+    getLastOutput() {
+        return this.outputValues[this.outputValues.length - 1];
+    }
+
+    status() {
+        if (this.stopped) {
+            return 'stopped';
+        }
+
+        if (this.waiting) {
+            return 'waiting';
+        }
     }
 
     done() {

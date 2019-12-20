@@ -52,32 +52,69 @@ function getPermutations(arr) {
 const NUM_AMPLIFIERS = 5;
 const setup = (...args) => new IntcodeComputer(...args);
 const parseProgram = raw => raw.split(',').map(parseFloat);
-const runProgram = computer => computer.run();
 
-async function runSequence(sequence, program, options = {}) {
+function runSequence(sequence, program, options = {}) {
     let nextInput = 0;
     for (let i = 0; i < NUM_AMPLIFIERS; i += 1) {
         const computer = setup(program, {
-            inputs: [sequence[i], nextInput],
             done({ outputValues }) {
                 nextInput = outputValues.pop();
             },
             ...options,
         });
-        await runProgram(computer);
+        computer.run([sequence[i], nextInput]);
     }
     return nextInput;
 }
 
-async function findMaxSignal(input) {
-    const sequences = getPermutations([0, 1, 2, 3, 4]);
+function runSequenceLoop(sequence, program, options = {}) {
+    // Create the amplifiers
+    const amps = Array(NUM_AMPLIFIERS)
+        .fill(0)
+        .map(() => setup(program));
+
+    let ampIndex = 0;
+    let nextInput = 0;
+
+    // While the last amplifier is still running
+    while (amps[NUM_AMPLIFIERS - 1].status() !== 'stopped') {
+        const amp = amps[ampIndex];
+
+        // On first run, send the phase setting and input
+        if (!amp.status()) {
+            amp.run([sequence[ampIndex], nextInput]);
+
+            // Otherwise just send the previous amplifier output as input
+        } else {
+            amp.run([nextInput]);
+        }
+
+        // Set next input
+        nextInput = amp.getLastOutput();
+
+        // If we've reached the last amplifier, loop back to first
+        if (ampIndex === NUM_AMPLIFIERS - 1) {
+            ampIndex = 0;
+        } else {
+            ampIndex += 1;
+        }
+    }
+
+    return nextInput;
+}
+
+function findMaxSignal(input, phaseSettings, options = {}) {
+    const sequences = getPermutations(phaseSettings);
     const signals = [];
 
     for (let i = 0; i < sequences.length; i += 1) {
         const sequence = sequences[i];
-        const signal = await runSequence(sequence, parseProgram(input), {
-            quiet: true,
-        });
+        const signal = options.loop
+            ? runSequenceLoop(sequence, parseProgram(input))
+            : runSequence(sequence, parseProgram(input), {
+                  quiet: true,
+              });
+
         signals.push(signal);
     }
 
