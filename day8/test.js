@@ -4,6 +4,7 @@ const {
     splitToLayers,
     getDigitCount,
     getDigitCountByLayer,
+    decodeImage,
 } = require('./index');
 
 const imageSize = [25, 6];
@@ -21,5 +22,13 @@ describe('Space Image Format', () => {
         const ones = getDigitCount(fewestZeroesLayer, 1);
         const twos = getDigitCount(fewestZeroesLayer, 2);
         expect(ones * twos).toEqual(1215);
+    });
+
+    it('should decode test image', () => {
+        decodeImage('0222112222120000', [2, 2]);
+    });
+
+    it('should decode puzzle image', () => {
+        decodeImage(input, imageSize);
     });
 });
