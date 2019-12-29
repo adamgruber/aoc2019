@@ -28,10 +28,14 @@ describe('Sensor Boost', () => {
     });
 
     it('should output BOOST keycode', () => {
-        const computer = setup(input, {
-            debugLevel: 'info',
-        });
+        const computer = setup(input);
         computer.run([1]);
         expect(computer.getLastOutput()).toEqual(3497884671);
+    });
+
+    it('should output BOOST coordinates', () => {
+        const computer = setup(input);
+        computer.run([2]);
+        expect(computer.getLastOutput()).toEqual(46470);
     });
 });
