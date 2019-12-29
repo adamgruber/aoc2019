@@ -1,31 +1,13 @@
 const chalk = require('chalk');
+
 const log = console.log;
-
-// const askQuestion = (question, transform = x => x) => {
-//     const readline = require('readline').createInterface({
-//         input: process.stdin,
-//         output: process.stdout,
-//     });
-//     return new Promise((resolve, reject) => {
-//         readline.question(question, response => {
-//             readline.close();
-//             let transformed;
-//             try {
-//                 transformed = transform(response);
-//             } catch (err) {
-//                 reject(err);
-//             }
-//             resolve(transformed);
-//         });
-//     });
-// };
-
 const DEBUG_LEVELS = ['none', 'info', 'verbose'];
 
 class IntcodeComputer {
     constructor(program, opts = {}) {
         this.memory = [...program];
         this.pointer = 0;
+        this.relativeBase = 0;
         this.opcode = null;
         this.pointerModified = false;
         this.stopped = false;
@@ -63,10 +45,11 @@ class IntcodeComputer {
         if (!this.instruction) {
             return;
         }
-        const inst = this.instruction.toString().padStart(4, '0');
-        const [modes, code] = inst.match(/.{2}/g);
+        const inst = this.instruction.toString().padStart(5, '0');
+        const code = inst.slice(-2);
+        const modes = inst.slice(0, 3);
 
-        this.opcode = this.opcodes[code];
+        this.opcode = this.opcodes[code] || {};
         this.parameterModes = modes
             .split('')
             .reverse()
@@ -89,11 +72,43 @@ class IntcodeComputer {
             return;
         }
 
+        const { POSITION, IMMEDIATE, RELATIVE } = this.modes;
+
         this.params = [];
-        for (let i = 1; i <= this.opcode.paramsLength; i += 1) {
-            const param = this.memory[this.pointer + i];
+        const { paramsLength } = this.opcode;
+        for (let i = 1; i <= paramsLength; i += 1) {
+            const param = this.getAddress(this.pointer + i);
             const mode = this.parameterModes[i - 1] || 0;
-            this.params.push(mode === 1 ? param : this.memory[param]);
+
+            switch (mode) {
+                case POSITION:
+                    this.params.push(this.getAddress(param));
+                    break;
+
+                case IMMEDIATE:
+                    this.params.push(param);
+                    break;
+
+                case RELATIVE:
+                    this.params.push(
+                        this.getAddress(this.relativeBase + param)
+                    );
+                    break;
+
+                default:
+                // Unexpected
+            }
+        }
+
+        if (this.opcode.write) {
+            const idx = paramsLength + 1;
+            const param = this.getAddress(this.pointer + idx);
+            const mode = this.parameterModes[this.opcode.paramsLength];
+            if (mode === RELATIVE) {
+                this.params.push(this.relativeBase + param);
+            } else {
+                this.params.push(param);
+            }
         }
     }
 
@@ -110,54 +125,32 @@ class IntcodeComputer {
         }
 
         const input = this.inputs.shift();
-        const address = this.memory[this.pointer + 1];
+        const address = this.params[0];
+
         this.debug(
             chalk`Setting input {bold ${input}} at address {bold ${address}}`
         );
-        this.memory[address] = input;
+        this.setAddress(address, input);
         this.waiting = false;
     }
 
-    // async askForInput() {
-    //     try {
-    //         const input = await askQuestion('Input: ', response => {
-    //             if (!/^\d+$/.test(response)) {
-    //                 throw new Error('Input must be an integer');
-    //             }
-    //             return parseInt(response, 10);
-    //         });
-    //     } catch (err) {
-    //         log(err.message);
-    //     }
-    // }
+    getAddress(address) {
+        return this.memory[address];
+    }
 
-    // async getInput() {
-    //     let input;
-    //     if (!this.inputs.length) {
-    //         try {
-    //             input = await this.askForInput();
-    //         } catch (err) {
-    //             log(err.message);
-    //         }
-    //     } else {
-    //         input = this.inputs.shift();
-    //     }
-
-    //     const address = this.memory[this.pointer + 1];
-    //     this.debug(
-    //         chalk`Setting input {bold ${input}} at address {bold ${address}}`
-    //     );
-    //     this.memory[address] = input;
-    // }
+    adjustRelativeBase() {
+        this.relativeBase += this.params[0];
+        this.debug(
+            chalk`Relative Base adjusted to {bold ${this.relativeBase}}`
+        );
+    }
 
     add() {
-        const address = this.memory[this.pointer + 3];
-        this.setAddress(address, this.params[0] + this.params[1]);
+        this.setAddress(this.params[2], this.params[0] + this.params[1]);
     }
 
     multiply() {
-        const address = this.memory[this.pointer + 3];
-        this.setAddress(address, this.params[0] * this.params[1]);
+        this.setAddress(this.params[2], this.params[0] * this.params[1]);
     }
 
     output() {
@@ -168,26 +161,34 @@ class IntcodeComputer {
 
     jumpIfTrue() {
         if (this.params[0] !== 0) {
-            this.pointer = this.params[1];
+            const newPointer = this.params[1];
+            this.debug(chalk`Setting pointer to {bold ${newPointer}}`);
+            this.pointer = newPointer;
             this.pointerModified = true;
         }
     }
 
     jumpIfFalse() {
         if (this.params[0] === 0) {
-            this.pointer = this.params[1];
+            const newPointer = this.params[1];
+            this.debug(chalk`Setting pointer to {bold ${newPointer}}`);
+            this.pointer = newPointer;
             this.pointerModified = true;
         }
     }
 
     lessThan() {
-        const address = this.memory[this.pointer + 3];
-        this.setAddress(address, this.params[0] < this.params[1] ? 1 : 0);
+        this.setAddress(
+            this.params[2],
+            this.params[0] < this.params[1] ? 1 : 0
+        );
     }
 
     equals() {
-        const address = this.memory[this.pointer + 3];
-        this.setAddress(address, this.params[0] === this.params[1] ? 1 : 0);
+        this.setAddress(
+            this.params[2],
+            this.params[0] === this.params[1] ? 1 : 0
+        );
     }
 
     nextInstruction() {
@@ -204,6 +205,8 @@ class IntcodeComputer {
                 Instruction: {bold ${this.instruction}}
                 Opcode type: {bold ${this.opcode.type}}
                 Params: {bold ${this.params}}
+                Inputs: {bold ${this.inputs}}
+                Modes: {bold ${this.parameterModes}}
             `);
 
             switch (this.opcode.type) {
@@ -239,13 +242,19 @@ class IntcodeComputer {
                     this.equals();
                     break;
 
+                case 'ADJUST-RELATIVE-BASE':
+                    this.adjustRelativeBase();
+                    break;
+
                 case 'STOP':
                     this.stopped = true;
                     break;
 
                 default:
                     log(
-                        chalk`{red Unexpected opcode: {bold ${this.instruction}}}`
+                        chalk`{red Unexpected opcode: {bold ${
+                            this.instruction
+                        }}}`
                     );
             }
 
@@ -261,7 +270,7 @@ class IntcodeComputer {
     }
 
     getMemory() {
-        return this.memory;
+        return this.memory.slice(0, this.memory.indexOf(99) + 1);
     }
 
     getLastOutput() {
@@ -293,16 +302,19 @@ IntcodeComputer.prototype.opcodes = {
     '01': {
         instructionLength: 4,
         paramsLength: 2,
+        write: true,
         type: 'ADD',
     },
     '02': {
         instructionLength: 4,
         paramsLength: 2,
+        write: true,
         type: 'MULTIPLY',
     },
     '03': {
         instructionLength: 2,
-        paramsLength: 1,
+        paramsLength: 0,
+        write: true,
         type: 'INPUT',
     },
     '04': {
@@ -323,18 +335,31 @@ IntcodeComputer.prototype.opcodes = {
     '07': {
         instructionLength: 4,
         paramsLength: 2,
+        write: true,
         type: 'LESS THAN',
     },
     '08': {
         instructionLength: 4,
         paramsLength: 2,
+        write: true,
         type: 'EQUALS',
+    },
+    '09': {
+        instructionLength: 2,
+        paramsLength: 1,
+        type: 'ADJUST-RELATIVE-BASE',
     },
     '99': {
         instructionLength: 1,
         paramsLength: 0,
         type: 'STOP',
     },
+};
+
+IntcodeComputer.prototype.modes = {
+    POSITION: 0,
+    IMMEDIATE: 1,
+    RELATIVE: 2,
 };
 
 module.exports = IntcodeComputer;

@@ -11,7 +11,11 @@ function getInput(day) {
 }
 
 function parseIntcode(raw) {
-    return raw.split(',').map(parseFloat);
+    const pad = Array(1000).fill(0);
+    return raw
+        .split(',')
+        .map(parseFloat)
+        .concat(pad);
 }
 
 function permuteArray(arr) {
