@@ -6,7 +6,8 @@
   "devDependencies": {
     "chalk": "^3.0.0",
     "dedent": "^0.7.0",
-    "jest": "^24.9.0"
+    "jest": "^24.9.0",
+    "move-terminal-cursor": "0.0.4"
   },
   "scripts": {
     "start": "node aoc2019.js",

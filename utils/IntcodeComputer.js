@@ -1,10 +1,14 @@
 const chalk = require('chalk');
+const { parseIntcode } = require('./index');
 
 const log = console.log;
 const DEBUG_LEVELS = ['none', 'info', 'verbose'];
 
 class IntcodeComputer {
     constructor(program, opts = {}) {
+        if (typeof program === 'string') {
+            program = parseIntcode(program);
+        }
         this.memory = [...program];
         this.pointer = 0;
         this.relativeBase = 0;
@@ -18,6 +22,7 @@ class IntcodeComputer {
             debugLevel: 'none',
             inputs: [],
             done() {},
+            onOutput() {},
             ...opts,
         };
 
@@ -155,7 +160,13 @@ class IntcodeComputer {
 
     output() {
         const value = this.params[0];
+        // Add output value to list of stored outputs
         this.outputValues.push(value);
+
+        // Call callback fn
+        this.options.onOutput(value);
+
+        // Output to console
         this.info(chalk`Output: {bold ${value}}`);
     }
 
