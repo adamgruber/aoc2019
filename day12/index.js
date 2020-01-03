@@ -71,7 +71,7 @@ function applyGravity(step) {
                     //     `subtracting velocity from moon ${moonIdx + 1}`
                     // );
                     nextStep[moonIdx][vIdx] += 1;
-                    nextStep[moonIdx + 1][vIdx] -= 1;
+                    nextStep[moonIdx + i + 1][vIdx] -= 1;
                     // nextVelocity = moonVelocity + 1;
                     // console.log(nextVelocity);
                 } else if (moonPos[j] > comparePos[j]) {
@@ -80,7 +80,7 @@ function applyGravity(step) {
                     // console.log(`subtracting velocity from moon ${moonIdx}`);
                     // nextVelocity = moonVelocity - 1;
                     nextStep[moonIdx][vIdx] -= 1;
-                    nextStep[moonIdx + 1][vIdx] += 1;
+                    nextStep[moonIdx + i + 1][vIdx] += 1;
                 } else {
                     console.log(moonPos[j], comparePos[j], 0);
                 }
