@@ -1,10 +1,29 @@
 const { getInput } = require('../utils');
 
-// const puzzleInput = getInput(12);
-const puzzleInput = `<x=-1, y=0, z=2>
+const puzzleInput = getInput(12);
+
+const puzzleInputA = `<x=-1, y=0, z=2>
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>`;
+
+const puzzleInputB = `<x=-8, y=-10, z=0>
+<x=5, y=5, z=10>
+<x=2, y=-7, z=3>
+<x=9, y=-8, z=-3>`;
+
+const AXES = 3;
+const NUM_STEPS = 1000;
+
+const gcd = (a, b) => (!b ? a : gcd(b, a % b));
+const lcm = (a, b) => (a * b) / gcd(a, b);
+
+function lcmRange(arr) {
+    // lcm(a,b,c) = lcm(lcm(a,b), c)
+    return arr.reduce((acc, a, i) => {
+        return lcm(a, acc);
+    }, arr[0]);
+}
 
 function parseInput(input) {
     return input.split('\n').reduce((acc, moonPosition) => {
@@ -21,22 +40,26 @@ function cloneArray(arr) {
 }
 
 function initSystem(initialScan) {
-    const steps = [parseInput(initialScan)];
+    return parseInput(initialScan);
+}
 
-    // applyGravity(steps[0].positions, steps[0].velocities);
-    // console.log(steps);
-
-    for (let i = 0; i < 1; i += 1) {
-        steps.push(applyGravity(steps[i]));
+function simulateMovement(initialStep, numberSteps) {
+    const steps = [initialStep];
+    for (let i = 0; i < numberSteps; i += 1) {
+        const nextStep = applyGravity(steps[i]);
+        applyVelocity(nextStep);
+        steps.push(nextStep);
     }
+    return steps;
+}
 
-    console.log(steps[0]);
-    console.log('\n');
-    console.log(steps[1]);
+function simulateUniverse(step) {
+    const nextStep = applyGravity(step);
+    applyVelocity(nextStep);
+    return nextStep;
 }
 
 function applyGravity(step) {
-    console.log('applyGravity');
     const positions = cloneArray(step);
     const nextStep = cloneArray(step);
 
@@ -45,44 +68,18 @@ function applyGravity(step) {
 
     while (positions.length) {
         moonPos = positions.shift();
-        // console.log(nextStep[moonIdx], 'adam');
         // Loop over positions
-        for (let j = 0; j < 3; j += 1) {
-            console.log('\n');
+        for (let j = 0; j < AXES; j += 1) {
             for (let i = 0; i < positions.length; i += 1) {
                 const comparePos = positions[i];
                 // Loop over position values (ignoring velocities)
-                const vIdx = j + 3;
-                // const moonVelocity = nextStep[moonIdx][vIdx];
-                // Calc adjustment velocity for moon and comparator
-                // console.log(`
-                //   moonIdx: ${moonIdx}
-                //   velocityIndex: ${vIdx}
-                //   moonPos: ${moonPos[j]}
-                //   comparePos: ${comparePos[j]}
-                //   moonVelocity: ${nextStep[moonIdx][vIdx]}
-                // `);
-                // let nextVelocity;
-                console.log('moon index:', moonIdx, i, j);
+                const vIdx = j + AXES;
                 if (moonPos[j] < comparePos[j]) {
-                    console.log(moonPos[j], comparePos[j], 1);
-                    // console.log(`adding velocity to moon ${moonIdx}`);
-                    // console.log(
-                    //     `subtracting velocity from moon ${moonIdx + 1}`
-                    // );
                     nextStep[moonIdx][vIdx] += 1;
                     nextStep[moonIdx + i + 1][vIdx] -= 1;
-                    // nextVelocity = moonVelocity + 1;
-                    // console.log(nextVelocity);
                 } else if (moonPos[j] > comparePos[j]) {
-                    console.log(moonPos[j], comparePos[j], -1);
-                    // console.log(`adding velocity to moon ${moonIdx + 1}`);
-                    // console.log(`subtracting velocity from moon ${moonIdx}`);
-                    // nextVelocity = moonVelocity - 1;
                     nextStep[moonIdx][vIdx] -= 1;
                     nextStep[moonIdx + i + 1][vIdx] += 1;
-                } else {
-                    console.log(moonPos[j], comparePos[j], 0);
                 }
             }
         }
@@ -92,4 +89,69 @@ function applyGravity(step) {
     return nextStep;
 }
 
-initSystem(puzzleInput);
+function applyVelocity(step) {
+    step.forEach(moon => {
+        for (let i = 0; i < AXES; i += 1) {
+            moon[i] += moon[i + AXES];
+        }
+    });
+}
+
+function calculateEnergy(step) {
+    return step.reduce((acc, moon) => {
+        let pot = 0;
+        let kin = 0;
+        for (let i = 0; i < AXES; i += 1) {
+            pot += Math.abs(moon[i]);
+            kin += Math.abs(moon[i + AXES]);
+        }
+        return (acc += pot * kin);
+    }, 0);
+}
+
+function part1() {
+    const initialStep = initSystem(puzzleInput);
+    const steps = simulateMovement(initialStep, NUM_STEPS);
+    const energy = calculateEnergy(steps[steps.length - 1]);
+    console.log(energy);
+}
+
+function getAxis(step, axis) {
+    const axes = {
+        x: 0,
+        y: 1,
+        z: 2,
+    };
+    return step
+        .reduce((acc, moon) => {
+            acc.push(moon[axes[axis]]);
+            acc.push(moon[axes[axis] + 3]);
+            return acc;
+        }, [])
+        .join('');
+}
+
+function part2() {
+    const initialStep = initSystem(puzzleInput);
+
+    const totalSteps = [];
+
+    ['x', 'y', 'z'].forEach(axis => {
+        const axisStr = getAxis(initialStep, axis);
+        let nextStep = simulateUniverse(initialStep);
+        let numSteps = 1;
+
+        while (getAxis(nextStep, axis) !== axisStr) {
+            nextStep = simulateUniverse(nextStep);
+            numSteps += 1;
+        }
+
+        totalSteps.push(numSteps);
+    });
+
+    const stepsToRepeat = lcmRange(totalSteps);
+    console.log(stepsToRepeat);
+}
+
+part1();
+part2();
