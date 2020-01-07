@@ -263,10 +263,9 @@ class IntcodeComputer {
 
                 default:
                     log(
-                        chalk`{red Unexpected opcode: {bold ${
-                            this.instruction
-                        }}}`
+                        chalk`{red Unexpected opcode: {bold ${this.instruction}}}`
                     );
+                    this.stopped = true;
             }
 
             if (this.waiting) {
