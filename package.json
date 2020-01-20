@@ -7,12 +7,14 @@
     "chalk": "^3.0.0",
     "dedent": "^0.7.0",
     "jest": "^24.9.0",
-    "move-terminal-cursor": "0.0.4"
+    "move-terminal-cursor": "0.0.4",
+    "nodemon": "^2.0.2"
   },
   "scripts": {
     "start": "node aoc2019.js",
     "test": "jest",
-    "tdd": "jest --watchAll"
+    "tdd": "jest --watchAll",
+    "nm": "nodemon"
   },
   "author": "Adam Gruber",
   "license": "ISC",
